@@ -2,228 +2,191 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8" />
-  <title>Form Pengajuan Surat</title>
-  <script src="https://cdn.tailwindcss.com"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <!-- Ubah judul halaman sesuai nama aplikasi Anda -->
+  <title>Aplikasi Web</title>
+
+  <style>
+    /* Reset CSS dasar agar iframe tampil penuh tanpa margin/scrollbar ganda */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+      background-color: #f8fafc;
+      color: #0f172a;
+      transition: background-color 0.3s ease, color 0.3s ease;
+    }
+
+    /* Dukungan Tema Gelap Otomatis */
+    @media (prefers-color-scheme: dark) {
+      html, body {
+        background-color: #0f172a;
+        color: #f8fafc;
+      }
+      .loader-card {
+        background-color: #1e293b;
+        border-color: #334155;
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
+      }
+      .loader-subtitle {
+        color: #94a3b8;
+      }
+    }
+
+    /* Container Utama Aplikasi */
+    #app-wrapper {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      height: 100dvh; /* Mendukung tinggi layar dinamis pada browser mobile */
+      z-index: 1;
+    }
+
+    /* Iframe Google Apps Script */
+    #gas-iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+      display: block;
+      opacity: 0;
+      transition: opacity 0.5s ease-in-out;
+    }
+
+    #gas-iframe.loaded {
+      opacity: 1;
+    }
+
+    /* Layar Pemuatan (Loading Overlay) */
+    #loader-overlay {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      padding: 20px;
+      transition: opacity 0.4s ease, visibility 0.4s ease;
+    }
+
+    #loader-overlay.hidden {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+
+    .loader-card {
+      background-color: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 16px;
+      padding: 32px 40px;
+      text-align: center;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
+      max-width: 360px;
+      width: 100%;
+    }
+
+    /* Animasi Spinner Modern */
+    .spinner {
+      width: 44px;
+      height: 44px;
+      border: 3.5px solid rgba(59, 130, 246, 0.2);
+      border-top-color: #3b82f6;
+      border-radius: 50%;
+      animation: spin 0.9s cubic-bezier(0.55, 0.15, 0.45, 0.85) infinite;
+      margin: 0 auto 20px auto;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .loader-title {
+      font-size: 1.125rem;
+      font-weight: 600;
+      margin-bottom: 6px;
+      letter-spacing: -0.01em;
+    }
+
+    .loader-subtitle {
+      font-size: 0.875rem;
+      color: #64748b;
+      line-height: 1.4;
+    }
+  </style>
 </head>
-<body class="bg-gray-100 min-h-screen flex items-center justify-center">
-  <div class="bg-white w-full max-w-xl p-6 rounded-2xl shadow">
-    <h1 class="text-2xl font-bold text-center mb-6">Form Pengajuan Surat</h1>
 
-    <!-- ===== notifikasi ===== -->
-    <div id="notice" class="hidden mb-4 p-3 rounded border"></div>
-
-    <!-- ===== FORM ===== -->
-    <form id="formSurat" class="space-y-4">
-
-      <!-- Nama Pengirim -->
-      <div>
-        <label class="block font-semibold mb-1">Nama Pengirim</label>
-        <input type="text" name="Nama Pengirim" class="w-full p-2 border rounded" required />
-      </div>
-
-      <!-- Unit (dropdown dinamis) -->
-      <div>
-        <label class="block font-semibold mb-1">Unit</label>
-        <select id="unitSelect" class="w-full p-2 border rounded" required></select>
-        <input type="hidden" name="Unit" id="unitName" />
-      </div>
-
-      <!-- Jenis Surat (dropdown dinamis) -->
-      <div>
-        <label class="block font-semibold mb-1">Jenis Surat</label>
-        <select id="jenisSelect" class="w-full p-2 border rounded" required></select>
-        <input type="hidden" name="Jenis Surat" id="jenisName" />
-      </div>
-
-      <!-- Placeholder dinamis -->
-      <div id="placeholdersContainer" class="space-y-3"></div>
-
-      <!-- Tombol -->
-      <div class="flex items-center gap-3">
-        <button type="submit" id="btnKirim"
-                class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">
-          Kirim
-        </button>
-        <button type="button" id="btnLoading"
-                class="hidden bg-gray-400 text-white px-4 py-2 rounded" disabled>
-          Loading...
-        </button>
-
-
-        <!-- Spacer otomatis -->
-  <a href="data-ajuan"
-     class="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 ml-auto rounded">
-    Data Ajuan
-  </a>
-      </div>
-    </form>
+<body>
+  <!-- Indikator Pemuatan Aplikasi -->
+  <div id="loader-overlay">
+    <div class="loader-card">
+      <div class="spinner"></div>
+      <div class="loader-title">Aplikasi Web</div>
+      <div class="loader-subtitle" id="loader-status">Memuat aplikasi, mohon tunggu sebentar...</div>
+    </div>
   </div>
 
-<script>
-  // ========== KONFIG ==========
-  const WEBAPP_URL = "https://script.google.com/macros/s/AKfycbzCulBeblOhcarbdkp9Fn_SnvslTYpdXbDXKOAduBTanJQNFqq9y_95ix-LNQ-zarXORg/exec"; // Ganti dengan URL Web App Anda
+  <!-- Wadah Fullscreen untuk Google Apps Script -->
+  <div id="app-wrapper">
+    <iframe 
+      allow="camera; microphone; geolocation; clipboard-read; clipboard-write; fullscreen" 
+      id="gas-iframe" 
+      loading="eager" 
+      src="https://script.google.com/macros/s/AKfycbzCulBeblOhcarbdkp9Fn_SnvslTYpdXbDXKOAduBTanJQNFqq9y_95ix-LNQ-zarXORg/exec" 
+      title="Aplikasi Web">
+    </iframe>
+  </div>
 
-  // ========== Elemen ==========
-  const form = document.getElementById("formSurat");
-  const unitSelect = document.getElementById("unitSelect");
-  const jenisSelect = document.getElementById("jenisSelect");
-  const unitName = document.getElementById("unitName");
-  const jenisName = document.getElementById("jenisName");
-  const placeholdersContainer = document.getElementById("placeholdersContainer");
-  const btnKirim = document.getElementById("btnKirim");
-  const btnLoading = document.getElementById("btnLoading");
-  const notice = document.getElementById("notice");
+  <!-- Logika JavaScript untuk Menangani Pemuatan Iframe & Error Handling -->
+  <script>
+    document.addEventListener("DOMContentLoaded", function() {
+      try {
+        const iframe = document.getElementById("gas-iframe");
+        const loader = document.getElementById("loader-overlay");
+        const statusText = document.getElementById("loader-status");
 
-  // ========== UTIL ==========
-  function showNotice(text, ok = true) {
-    notice.textContent = text;
-    notice.classList.remove("hidden");
-    notice.classList.toggle("border-green-500", ok);
-    notice.classList.toggle("bg-green-50", ok);
-    notice.classList.toggle("text-green-700", ok);
-    notice.classList.toggle("border-red-500", !ok);
-    notice.classList.toggle("bg-red-50", !ok);
-    notice.classList.toggle("text-red-700", !ok);
-  }
-  function clearNotice() { notice.classList.add("hidden"); notice.textContent = ""; }
+        // Fungsi untuk menyembunyikan layar pemuatan saat iframe selesai dimuat
+        function hideLoader() {
+          if (iframe) iframe.classList.add("loaded");
+          if (loader) loader.classList.add("hidden");
+        }
 
-  function toggleLoading(loading) {
-    btnKirim.classList.toggle("hidden", loading);
-    btnLoading.classList.toggle("hidden", !loading);
-  }
+        // Event listener ketika iframe berhasil memuat konten
+        if (iframe) {
+          iframe.addEventListener("load", function() {
+            // Beri sedikit jeda agar render internal GAS selesai dengan mulus
+            setTimeout(hideLoader, 300);
+          });
+        }
 
-  // ========== DATA LOADER (GET) ==========
-  async function loadUnits() {
-    const res = await fetch(WEBAPP_URL);
-    const data = await res.json();
-    unitSelect.innerHTML = '<option value="">-- Pilih Unit --</option>';
-    data.forEach(f => {
-      const opt = document.createElement("option");
-      opt.value = f.id;
-      opt.textContent = f.name;
-      unitSelect.appendChild(opt);
-    });
-  }
+        // Fallback timeout: Jika jaringan lambat (> 5 detik), beri informasi status
+        setTimeout(function() {
+          if (loader && !loader.classList.contains("hidden")) {
+            statusText.textContent = "Koneksi memakan waktu lebih lama dari biasanya...";
+          }
+        }, 5000);
 
-  async function loadFiles(folderId) {
-    const res = await fetch(`${WEBAPP_URL}?folderId=${encodeURIComponent(folderId)}`);
-    const data = await res.json();
-    jenisSelect.innerHTML = '<option value="">-- Pilih Jenis Surat --</option>';
-    data.forEach(f => {
-      const opt = document.createElement("option");
-      opt.value = f.id;
-      opt.textContent = f.name;
-      jenisSelect.appendChild(opt);
-    });
-  }
+        // Buka layar otomatis setelah 10 detik agar tidak terjebak di loading screen
+        setTimeout(function() {
+          if (loader && !loader.classList.contains("hidden")) {
+            hideLoader();
+          }
+        }, 10000);
 
-  async function loadPlaceholders(fileId) {
-    const res = await fetch(`${WEBAPP_URL}?fileId=${encodeURIComponent(fileId)}`);
-    const data = await res.json();
-    placeholdersContainer.innerHTML = "";
-    (data.placeholders || []).forEach(ph => {
-      const wrap = document.createElement("div");
-      wrap.innerHTML = `
-        <label class="block font-semibold mb-1">${ph}</label>
-        <input type="text" name="${ph}" class="w-full p-2 border rounded" required />
-      `;
-      placeholdersContainer.appendChild(wrap);
-    });
-  }
-
-  // ========== EVENTS ==========
-  unitSelect.addEventListener("change", async (e) => {
-    clearNotice();
-    placeholdersContainer.innerHTML = "";
-    jenisSelect.innerHTML = "";
-    unitName.value = ""; jenisName.value = "";
-
-    const selected = unitSelect.options[unitSelect.selectedIndex];
-    if (!selected.value) return;
-
-    unitName.value = selected.textContent;
-
-    toggleLoading(true);
-    try {
-      await loadFiles(selected.value);
-    } catch (err) {
-      showNotice("Gagal memuat jenis surat. Cek Web App.", false);
-      console.error(err);
-    } finally {
-      toggleLoading(false);
-    }
-  });
-
-  jenisSelect.addEventListener("change", async (e) => {
-    clearNotice();
-    placeholdersContainer.innerHTML = "";
-    jenisName.value = "";
-
-    const selected = jenisSelect.options[jenisSelect.selectedIndex];
-    if (!selected.value) return;
-
-    jenisName.value = selected.textContent;
-
-    toggleLoading(true);
-    try {
-      await loadPlaceholders(selected.value);
-    } catch (err) {
-      showNotice("Gagal memuat placeholder. Cek Web App.", false);
-      console.error(err);
-    } finally {
-      toggleLoading(false);
-    }
-  });
-
-  // SUBMIT: Menggunakan fetch API (dari jamiewilson)
-  form.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    clearNotice();
-    toggleLoading(true);
-
-    const formData = new FormData(form);
-
-    try {
-      const response = await fetch(WEBAPP_URL, {
-        method: "POST",
-        body: formData
-      });
-
-      if (!response.ok) {
-        throw new Error("Network response was not ok");
+      } catch (error) {
+        console.error("Terjadi kesalahan saat menginisialisasi frame aplikasi:", error);
       }
-
-      const data = await response.json();
-
-      if (data.result === "success") {
-        showNotice(`✅ Pengajuan berhasil dikirim!`, true);
-        form.reset();
-        placeholdersContainer.innerHTML = "";
-        jenisSelect.innerHTML = "";
-        unitSelect.selectedIndex = 0;
-      } else {
-        showNotice("❌ Gagal mengirim: " + (data.error || "Unknown error"), false);
-      }
-    } catch (err) {
-      showNotice("❌ Gagal mengirim: " + err.message, false);
-      console.error(err);
-    } finally {
-      toggleLoading(false);
-    }
-  });
-
-  // INIT
-  (async () => {
-    toggleLoading(true);
-    try {
-      await loadUnits();
-    } catch (err) {
-      showNotice("Gagal memuat Unit. Cek Web App & akses.", false);
-      console.error(err);
-    } finally {
-      toggleLoading(false);
-    }
-  })();
-</script>
+    });
+  </script>
 </body>
 </html>
